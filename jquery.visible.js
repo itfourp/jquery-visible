@@ -11,19 +11,20 @@
      *       only accounts for vertical position, not horizontal.
      */
     var $w = $(window);
-    $.fn.visible = function(partial,hidden,direction){
+    $.fn.visible = function(partial,hidden, direction, scrollContainer) {
+        var $c = scrollContainer || $w;
 
         if (this.length < 1)
             return;
 
         var $t        = this.length > 1 ? this.eq(0) : this,
             t         = $t.get(0),
-            vpWidth   = $w.width(),
-            vpHeight  = $w.height(),
+            vpWidth   = $c.width(),
+            vpHeight  = $c.height(),
             direction = (direction) ? direction : 'both',
             clientSize = hidden === true ? t.offsetWidth * t.offsetHeight : true;
 
-        if (typeof t.getBoundingClientRect === 'function'){
+        if (typeof t.getBoundingClientRect === 'function' && !scrollContainer) {
 
             // Use this native browser method, if available.
             var rec = t.getBoundingClientRect(),
@@ -41,10 +42,10 @@
             else if(direction === 'horizontal')
                 return clientSize && hVisible;
         } else {
-
-            var viewTop         = $w.scrollTop(),
+            // Use this calculation if scrollContainer was passed or native method is not available
+            var viewTop         = $c.scrollTop(),
                 viewBottom      = viewTop + vpHeight,
-                viewLeft        = $w.scrollLeft(),
+                viewLeft        = $c.scrollLeft(),
                 viewRight       = viewLeft + vpWidth,
                 offset          = $t.offset(),
                 _top            = offset.top,
@@ -55,6 +56,15 @@
                 compareBottom   = partial === true ? _top : _bottom,
                 compareLeft     = partial === true ? _right : _left,
                 compareRight    = partial === true ? _left : _right;
+            // add offset if scrollContainer was passed
+            if (scrollContainer) {
+                var viewOffset  = $c.offset();
+                viewTop         += viewOffset.top - $c.scrollTop();
+                viewBottom      += viewOffset.top - $c.scrollTop();
+                viewLeft        += viewOffset.left - $c.scrollLeft();
+                viewRight       += viewOffset.left - $c.scrollLeft();
+
+            }
 
             if(direction === 'both')
                 return !!clientSize && ((compareBottom <= viewBottom) && (compareTop >= viewTop)) && ((compareRight <= viewRight) && (compareLeft >= viewLeft));
